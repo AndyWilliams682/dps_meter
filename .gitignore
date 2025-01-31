@@ -52,3 +52,4 @@ app.*.map.json
 /rust/src/frb_generated*
 /rust/target/
 /rust/debug/
+/rust/vcpkg/
