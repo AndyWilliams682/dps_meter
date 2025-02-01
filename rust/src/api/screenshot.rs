@@ -1,13 +1,11 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
 
 use image::DynamicImage;
-use opencv::core::Rect;
 use rusty_tesseract::Args;
 use xcap::Window;
 use xcap::image::{GenericImage, ImageBuffer, Rgb, GrayImage};
 use opencv::{
-    core::{bitwise_and, bitwise_not, copy_make_border, in_range, Mat, MatTraitConst, Point_, Scalar, BORDER_CONSTANT},
+    core::{bitwise_and, bitwise_not, copy_make_border, in_range, Mat, MatTraitConst, Point_, Scalar, BORDER_CONSTANT, Rect},
     imgproc::{bounding_rect, cvt_color, get_structuring_element, morphology_default_border_value, morphology_ex, COLOR_BGR2HSV, INTER_NEAREST, MORPH_DILATE, MORPH_OPEN, MORPH_RECT},
     prelude::MatTraitConstManual,
 };
@@ -15,6 +13,13 @@ use opencv::{
 
 const TEXT_MIN: Scalar = Scalar::new(0.0, 0.0, 104.0, 0.0);
 const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
+
+
+#[flutter_rust_bridge::frb(init)]
+pub fn init_app() {
+    // Default utilities - feel free to customize
+    flutter_rust_bridge::setup_default_user_utils();
+}
 
 
 fn capture_region(
