@@ -5,7 +5,7 @@ use rusty_tesseract::Args;
 use xcap::Window;
 use xcap::image::{GenericImage, ImageBuffer, Rgb, GrayImage};
 use opencv::{
-    core::{bitwise_and, bitwise_not, copy_make_border, in_range, Mat, MatTraitConst, Point_, Scalar, BORDER_CONSTANT, Rect},
+    core::{bitwise_and, bitwise_not, copy_make_border, in_range, Mat, MatTraitConst, Point_, Scalar, BORDER_CONSTANT},
     imgproc::{bounding_rect, cvt_color, get_structuring_element, morphology_default_border_value, morphology_ex, COLOR_BGR2HSV, INTER_NEAREST, MORPH_DILATE, MORPH_OPEN, MORPH_RECT},
     prelude::MatTraitConstManual,
 };
@@ -13,13 +13,6 @@ use opencv::{
 
 const TEXT_MIN: Scalar = Scalar::new(0.0, 0.0, 104.0, 0.0);
 const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
-
-
-#[flutter_rust_bridge::frb(init)]
-pub fn init_app() {
-    // Default utilities - feel free to customize
-    flutter_rust_bridge::setup_default_user_utils();
-}
 
 
 fn capture_region(
@@ -182,24 +175,30 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
 }
 
 
-fn read_damage(region: Rect) -> Result<u32, anyhow::Error> {
+pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyhow::Error> {
     let screenshot_result = capture_region(
-        region.x as u32,
-        region.y as u32,
-        region.width as u32,
-        region.height as u32
+        x,
+        y,
+        width,
+        height
     );
+
+    if (width == 0) | (height == 0) {
+        return Ok(0) // Another catch for a minimized game
+    }
 
     let screenshot = match screenshot_result {
         Ok(s) => s,
-        Err(error) => panic!("Path of Exile 2 does not appear to be open or is minimzed. Reason: {error}")
+        // Err(error) => panic!("Path of Exile 2 does not appear to be open or is minimzed. Reason: {error}")
+        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something
     };
 
     let mask_result = get_mask(screenshot);
 
     let mask = match mask_result {
         Ok(s) => s,
-        Err(error) => panic!("OpenCV was unable to process this screenshot. Reason: {error}")
+        // Err(error) => panic!("OpenCV was unable to process this screenshot. Reason: {error}")
+        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something
     };
 
     let damage_result = read_mask(mask);
