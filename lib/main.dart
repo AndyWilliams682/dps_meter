@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -16,9 +17,11 @@ String dpsDisplay(double dps) {
   }
   var magnitude = logBase(dps, 1000).floor();
   var letter = "";
+  var decimalPlaces = 3 % (2 - logBase(dps, 10).floor());
   switch (magnitude) {
     case < 1:
       letter = "";
+      decimalPlaces = 0;
     case 1:
       letter = "k"; // thousands
     case 2:
@@ -30,7 +33,7 @@ String dpsDisplay(double dps) {
     case > 4:
       letter = "e$magnitude"; // Use scientific beyond trillions
   }
-  return (dps / pow(1000, magnitude)).toStringAsFixed(2) + letter;
+  return (dps / pow(1000, magnitude)).toStringAsFixed(decimalPlaces) + letter;
 }
 
 Future<void> main() async {
@@ -41,6 +44,9 @@ Future<void> main() async {
   windowManager.setAlwaysOnTop(true);
   
   runApp(const MyApp());
+  windowManager.waitUntilReadyToShow().then((_) async{
+      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+  });
 }
 
 class MyApp extends StatelessWidget {
@@ -65,8 +71,6 @@ class MyApp extends StatelessWidget {
 class MyAppState extends ChangeNotifier {
   var isCapturing = false;
   var capturingLabel = "Idle";
-  var label = ""; // TODO: Remove
-  var counter = 0; // TODO: Remove
   Timer? timer;
 
   var damageReading = 0;
@@ -74,8 +78,8 @@ class MyAppState extends ChangeNotifier {
   var damageHistory = <int>[];
 
   var dt = 250; // ms
-  final timeWindow = 4000; // ms
-  final windowIndexSize = 4000 ~/ 250;
+  var timeWindow = 4000; // ms
+  var windowIndexSize = 4000 ~/ 250;
   var elapsedTime = 0;
 
   var windowDps = 0.0;
@@ -83,6 +87,7 @@ class MyAppState extends ChangeNotifier {
 
   void toggleCapturing() async {
     isCapturing = !isCapturing;
+    print(isCapturing);
     
     if (isCapturing) {
       capturingLabel = "Measuring";
@@ -103,7 +108,9 @@ class MyAppState extends ChangeNotifier {
         accumulatedDamage = damageHistory[damageHistory.length - 1];
       }
     }
+    elapsedTime += dt;
     damageHistory.add(accumulatedDamage + damageReading); // TODO: Improve OCR accuracy through testing
+
     if ((damageHistory.length <= 1) || (damageReading == 0)) {
       return;
     }
@@ -113,19 +120,18 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _calculateOverallDps() {
-    overallDps = 1000 * damageHistory[damageHistory.length - 1] / elapsedTime; // Converting to damage per second
+    overallDps = 1000 * max(0, damageHistory[damageHistory.length - 1] - damageHistory[0]) / elapsedTime; // Converting to damage per second
   }
 
   void _calculateWindowDps() {
-    windowDps = 1000 * (damageHistory[damageHistory.length - 1] -
+    windowDps = 1000 * max(0, damageHistory[damageHistory.length - 1] -
                         damageHistory[max(0, damageHistory.length - windowIndexSize - 1)]) / timeWindow;
   }
 
   void _startTimer() {
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
-        elapsedTime += dt;
-        counter += 1; // TODO: Remove counter
+        // elapsedTime += dt;
         _captureDamage();
         print(damageHistory);
         print(accumulatedDamage);
@@ -167,7 +173,10 @@ class MainPage extends StatelessWidget {
             children: [
               Text("Overall DPS: ${dpsDisplay(overallDps)}"),
               Text("Window DPS: ${dpsDisplay(windowDps)}"),
-              ElevatedButton(onPressed: appState.toggleCapturing, child: Text(capturingLabel)) // TODO: replace with other syntax
+              ElevatedButton(onPressed: appState.toggleCapturing, child: Text(capturingLabel)), // TODO: replace with other syntax
+              CloseButton(onPressed: () {
+                exit(0);
+              }),
             ],
           ),
         ),
