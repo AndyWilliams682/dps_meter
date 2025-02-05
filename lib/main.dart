@@ -168,6 +168,13 @@ class MainPage extends StatelessWidget {
     var overallDps = appState.overallDps;
     var windowDps = appState.windowDps;
 
+    IconData icon;
+    if (appState.isCapturing) {
+      icon = Icons.pause;
+    } else {
+      icon = Icons.play_arrow;
+    }
+
     return MaterialApp(
       theme: ThemeData(fontFamily: 'Fontin'),
       home: Scaffold(
@@ -176,7 +183,11 @@ class MainPage extends StatelessWidget {
             children: [
               Text("Overall DPS: ${dpsDisplay(overallDps)}"),
               Text("Recent DPS: ${dpsDisplay(windowDps)}"),
-              ElevatedButton(onPressed: appState.toggleCapturing, child: Text(capturingLabel)), // TODO: replace with other syntax
+              ElevatedButton.icon(
+                onPressed: appState.toggleCapturing,
+                icon: Icon(icon),
+                label: Text(capturingLabel)
+              ), // TODO: remove text label
               CloseButton(onPressed: () {
                 exit(0);
               }),
