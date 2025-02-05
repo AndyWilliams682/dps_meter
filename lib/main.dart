@@ -17,7 +17,7 @@ String dpsDisplay(double dps) {
   }
   var magnitude = logBase(dps, 1000).floor();
   var letter = "";
-  var decimalPlaces = 3 % (2 - logBase(dps, 10).floor());
+  var decimalPlaces = (2 - logBase(dps, 10).floor()) % 3;
   switch (magnitude) {
     case < 1:
       letter = "";
@@ -77,9 +77,9 @@ class MyAppState extends ChangeNotifier {
   var accumulatedDamage = 0;
   var damageHistory = <int>[];
 
-  var dt = 250; // ms
+  var dt = 1000; // ms
   var timeWindow = 4000; // ms
-  var windowIndexSize = 4000 ~/ 250;
+  var windowIndexSize = 4000 ~/ 1000;
   var elapsedTime = 0;
 
   var windowDps = 0.0;
@@ -87,8 +87,6 @@ class MyAppState extends ChangeNotifier {
 
   void toggleCapturing() async {
     isCapturing = !isCapturing;
-    print(isCapturing);
-    
     if (isCapturing) {
       capturingLabel = "Measuring";
       _startTimer();
@@ -100,7 +98,10 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _captureDamage() async {
+    var start = DateTime.now();
     damageReading = (await readDamage(x: 576, y: 0, width: 1344, height: 65));
+    print(start.difference(DateTime.now()));
+
     if (damageReading == 0) {
       if (damageHistory.isEmpty) {
         return;
@@ -109,7 +110,7 @@ class MyAppState extends ChangeNotifier {
       }
     }
     elapsedTime += dt;
-    damageHistory.add(accumulatedDamage + damageReading); // TODO: Improve OCR accuracy through testing
+    damageHistory.add(accumulatedDamage + damageReading);
 
     if ((damageHistory.length <= 1) || (damageReading == 0)) {
       return;
@@ -120,7 +121,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _calculateOverallDps() {
-    overallDps = 1000 * max(0, damageHistory[damageHistory.length - 1] - damageHistory[0]) / elapsedTime; // Converting to damage per second
+    overallDps = 1000 * max(0, damageHistory[damageHistory.length - 1]) / elapsedTime; // Converting to damage per second
   }
 
   void _calculateWindowDps() {
@@ -131,11 +132,11 @@ class MyAppState extends ChangeNotifier {
   void _startTimer() {
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
-        // elapsedTime += dt;
         _captureDamage();
-        print(damageHistory);
-        print(accumulatedDamage);
-        print(damageReading);
+        // print(damageHistory);
+        // print(accumulatedDamage);
+        // print(elapsedTime);
+        // print(damageReading);
       } else {
         _stopTimer(); // Stop if the flag is set to false
       }
@@ -145,6 +146,7 @@ class MyAppState extends ChangeNotifier {
   void _stopTimer() {
     damageHistory = [];
     accumulatedDamage = 0;
+    elapsedTime = 0;
     timer?.cancel();
     timer = null;
   }
@@ -167,12 +169,13 @@ class MainPage extends StatelessWidget {
     var windowDps = appState.windowDps;
 
     return MaterialApp(
+      theme: ThemeData(fontFamily: 'Fontin'),
       home: Scaffold(
         body: Center(
           child: Column(
             children: [
               Text("Overall DPS: ${dpsDisplay(overallDps)}"),
-              Text("Window DPS: ${dpsDisplay(windowDps)}"),
+              Text("Recent DPS: ${dpsDisplay(windowDps)}"),
               ElevatedButton(onPressed: appState.toggleCapturing, child: Text(capturingLabel)), // TODO: replace with other syntax
               CloseButton(onPressed: () {
                 exit(0);
