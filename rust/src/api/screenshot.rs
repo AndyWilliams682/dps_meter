@@ -120,8 +120,8 @@ fn get_mask(screenshot: ImageBuffer<Rgb<u8>, Vec<u8>>) -> Result<DynamicImage, a
         &with_border,
         &mut result,
         opencv::core::Size_::new(0, 0),
-        2.0,
-        2.0,
+        3.0,
+        3.0,
         INTER_NEAREST
     )?;
 
@@ -206,5 +206,63 @@ pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyho
     match damage_result {
         Ok(s) => return Ok(s),
         Err(_) => return Ok(0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+
+    #[test]
+    fn read_white_19950() {
+        let image = image::ImageReader::open(r"tests\images\19950.jpg")
+            .unwrap()
+            .decode()
+            .unwrap()
+            .crop(576, 0, 1344, 65)
+            .to_rgb8();
+        let mask = get_mask(image).unwrap();
+        let result = read_mask(mask).unwrap();
+        assert_eq!(result, 19950);
+    }
+
+    #[test]
+    fn read_white_55837() {
+        let image = image::ImageReader::open(r"tests\images\55837.jpg")
+            .unwrap()
+            .decode()
+            .unwrap()
+            .crop(576, 0, 1344, 65)
+            .to_rgb8();
+        let mask = get_mask(image).unwrap();
+        let result = read_mask(mask).unwrap();
+        assert_eq!(result, 55837);
+    }
+
+    #[test]
+    fn read_gray_203() {
+        let image = image::ImageReader::open(r"tests\images\203.jpg")
+            .unwrap()
+            .decode()
+            .unwrap()
+            .crop(576, 0, 1344, 65)
+            .to_rgb8();
+        let mask = get_mask(image).unwrap();
+        let result = read_mask(mask).unwrap();
+        assert_eq!(result, 203);
+    }
+
+    #[test]
+    #[should_panic]
+    fn read_no_damage() {
+        let image = image::ImageReader::open(r"tests\images\no_damage.jpg")
+            .unwrap()
+            .decode()
+            .unwrap()
+            .crop(576, 0, 1344, 65)
+            .to_rgb8();
+        let mask = get_mask(image).unwrap();
+        read_mask(mask).unwrap(); // No number to read
     }
 }
