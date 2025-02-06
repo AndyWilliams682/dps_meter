@@ -41,7 +41,14 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+
   windowManager.setAlwaysOnTop(true);
+  windowManager.setOpacity(0.6);
+
+  await windowManager.center();
+  var currentPosition = await windowManager.getPosition();
+  windowManager.setPosition(Offset(currentPosition.dx, 0));
+  windowManager.setSize(Size(190, 50));
   
   runApp(const MyApp());
   windowManager.waitUntilReadyToShow().then((_) async{
@@ -60,7 +67,6 @@ class MyApp extends StatelessWidget {
         title: 'Test App',
         theme: ThemeData(
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         ),
         home: MainPage(),
       ),
@@ -98,9 +104,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _captureDamage() async {
-    var start = DateTime.now();
     damageReading = (await readDamage(x: 576, y: 0, width: 1344, height: 65));
-    print(start.difference(DateTime.now()));
 
     if (damageReading == 0) {
       if (damageHistory.isEmpty) {
@@ -133,10 +137,6 @@ class MyAppState extends ChangeNotifier {
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
         _captureDamage();
-        // print(damageHistory);
-        // print(accumulatedDamage);
-        // print(elapsedTime);
-        // print(damageReading);
       } else {
         _stopTimer(); // Stop if the flag is set to false
       }
@@ -164,7 +164,6 @@ class MainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {   
     var appState = context.watch<MyAppState>();
-    var capturingLabel = appState.capturingLabel;
     var overallDps = appState.overallDps;
     var windowDps = appState.windowDps;
 
@@ -178,16 +177,20 @@ class MainPage extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(fontFamily: 'Fontin'),
       home: Scaffold(
+        backgroundColor: Color.fromRGBO(0, 0, 0, 0.0),
         body: Center(
-          child: Column(
+          child: Row(
             children: [
-              Text("Overall DPS: ${dpsDisplay(overallDps)}"),
-              Text("Recent DPS: ${dpsDisplay(windowDps)}"),
-              ElevatedButton.icon(
-                onPressed: appState.toggleCapturing,
-                icon: Icon(icon),
-                label: Text(capturingLabel)
-              ), // TODO: remove text label
+              IconButton(icon: Icon(icon), onPressed: appState.toggleCapturing),
+              DragToMoveArea(
+                child: Column(
+                  children: [
+                    Text("Overall DPS: ${dpsDisplay(overallDps)}", style: TextStyle(color: Colors.white)),
+                    SizedBox(height: 2),
+                    Text("Recent DPS: ${dpsDisplay(windowDps)}", style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
               CloseButton(onPressed: () {
                 exit(0);
               }),
