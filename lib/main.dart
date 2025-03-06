@@ -37,9 +37,8 @@ String dpsDisplay(double dps) {
 }
 
 Future<void> main() async {
-  await RustLib.init();
-
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   await windowManager.ensureInitialized();
 
   windowManager.setAlwaysOnTop(true);
@@ -48,7 +47,7 @@ Future<void> main() async {
   await windowManager.center();
   var currentPosition = await windowManager.getPosition();
   windowManager.setPosition(Offset(currentPosition.dx, 0));
-  windowManager.setSize(Size(190, 50));
+  windowManager.setSize(Size(200, 50));
   
   runApp(const MyApp());
   windowManager.waitUntilReadyToShow().then((_) async{
@@ -64,7 +63,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
       child: MaterialApp(
-        title: 'Test App',
+        title: 'DPS Meter',
         theme: ThemeData(
           useMaterial3: true,
         ),
@@ -76,7 +75,6 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   var isCapturing = false;
-  var capturingLabel = "Idle";
   Timer? timer;
 
   var damageReading = 0;
@@ -94,17 +92,15 @@ class MyAppState extends ChangeNotifier {
   void toggleCapturing() async {
     isCapturing = !isCapturing;
     if (isCapturing) {
-      capturingLabel = "Measuring";
       _startTimer();
     } else {
-      capturingLabel = "Idle";
       _stopTimer();
     }
     notifyListeners();
   }
 
   void _captureDamage() async {
-    damageReading = (await readDamage(x: 576, y: 0, width: 1344, height: 65));
+    damageReading = (await readDamage(x: 576, y: 0, width: 1344, height: 65)); // TODO: Remove hard-coded values
 
     if (damageReading == 0) {
       if (damageHistory.isEmpty) {
