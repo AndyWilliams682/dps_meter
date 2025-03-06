@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use image::DynamicImage;
-use rusty_tesseract::Args;
+use tesseract_static::tesseract::Tesseract;
 use xcap::Window;
 use xcap::image::{GenericImage, ImageBuffer, Rgb, GrayImage};
 use opencv::{
@@ -14,6 +12,8 @@ use opencv::{
 const TEXT_MIN: Scalar = Scalar::new(0.0, 0.0, 104.0, 0.0);
 const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
 
+const TRAINING_DATA: &[u8] = include_bytes!("./eng.traineddata");
+
 
 fn capture_region(
     x: u32,
@@ -23,7 +23,7 @@ fn capture_region(
 ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, xcap::XCapError> {
     let windows = Window::all()?;
 
-    // TODO: Pick a specific window?
+    // TODO: Pick a specific window instead of searching through all of them
     for window in windows {
         if window.title() == "Path of Exile 2" && !window.is_minimized() {
             let image = window
@@ -33,7 +33,7 @@ fn capture_region(
             return Ok(DynamicImage::ImageRgba8(image).into_rgb8())
         }
     }
-    return Err(xcap::XCapError::new("Path of Exile 2 is either not open, or minimized".to_string()))
+    return Err(xcap::XCapError::new("Path of Exile 2 is either not open, or minimized".to_string())) // TODO: Make error types
 }
 
 
@@ -146,27 +146,29 @@ fn get_mask(screenshot: ImageBuffer<Rgb<u8>, Vec<u8>>) -> Result<DynamicImage, a
 
 
 fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
-    let my_args = Args {
-        //model language (tesseract default = 'eng')
-        //available languages can be found by running 'rusty_tesseract::get_tesseract_langs()'
-        lang: "eng".to_string(),
-    
-        //map of config variables
-        //this example shows a whitelist for the normal alphabet. Multiple arguments are allowed.
-        //available arguments can be found by running 'rusty_tesseract::get_tesseract_config_parameters()'
-        config_variables: HashMap::from([(
-                "tessedit_char_whitelist".into(),
-                "0123456789,".into(),
-            )]),
-        dpi: Some(150),       // specify DPI for input image
-        psm: Some(6),         // define page segmentation mode 6 (i.e. "Assume a single uniform block of text")
-        oem: Some(3),         // define optical character recognition mode 3 (i.e. "Default, based on what is available")
-    };
+    let tempfile = tempfile::Builder::new()
+        .prefix("dps_meter")
+        .suffix(".bmp")
+        .rand_bytes(5)
+        .tempfile()
+        .unwrap();
+    let path = tempfile.path();
 
-    let raw_ocr = rusty_tesseract::image_to_string(
-        &rusty_tesseract::Image::from_dynamic_image(&mask).unwrap(),
-        &my_args
-    )
+    mask.save(path).unwrap();
+
+    let parent = std::env::temp_dir();
+    std::fs::write(&parent.join("eng.traineddata"), &TRAINING_DATA[..]).unwrap();
+    
+    let raw_ocr = Tesseract::new(
+            Some(&parent.display().to_string()),
+            Some("eng"),
+        )
+        .unwrap()
+        .set_variable("tessedit_char_whitelist", "0123456789,")
+        .unwrap()
+        .set_image(path.to_str().unwrap())
+        .unwrap()
+        .get_text()
         .unwrap();
 
     let output = raw_ocr.trim().replace(",", "").parse::<u32>()?;
