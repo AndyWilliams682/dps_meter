@@ -7,7 +7,7 @@ use opencv::{
     imgproc::{bounding_rect, cvt_color, get_structuring_element, morphology_default_border_value, morphology_ex, COLOR_BGR2HSV, INTER_NEAREST, MORPH_DILATE, MORPH_OPEN, MORPH_RECT},
     prelude::MatTraitConstManual,
 };
-
+use tracing::{event, Level};
 
 const TEXT_MIN: Scalar = Scalar::new(0.0, 0.0, 104.0, 0.0);
 const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
@@ -150,26 +150,21 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
         .prefix("dps_meter")
         .suffix(".bmp")
         .rand_bytes(5)
-        .tempfile()
-        .unwrap();
+        .tempfile()?;
+    
     let path = tempfile.path();
-
-    mask.save(path).unwrap();
+    mask.save(path)?;
 
     let parent = std::env::temp_dir();
-    std::fs::write(&parent.join("eng.traineddata"), &TRAINING_DATA[..]).unwrap();
+    std::fs::write(&parent.join("eng.traineddata"), &TRAINING_DATA[..])?;
     
     let raw_ocr = Tesseract::new(
             Some(&parent.display().to_string()),
             Some("eng"),
-        )
-        .unwrap()
-        .set_variable("tessedit_char_whitelist", "0123456789,")
-        .unwrap()
-        .set_image(path.to_str().unwrap())
-        .unwrap()
-        .get_text()
-        .unwrap();
+        )?
+        .set_variable("tessedit_char_whitelist", "0123456789,")?
+        .set_image(path.to_str().unwrap())?
+        .get_text()?;
 
     let output = raw_ocr.trim().replace(",", "").parse::<u32>()?;
 
@@ -178,6 +173,7 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
 
 
 pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyhow::Error> {
+    event!(Level::INFO, "Taking screenshot");
     let screenshot_result = capture_region(
         x,
         y,
@@ -186,13 +182,14 @@ pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyho
     );
 
     if (width == 0) | (height == 0) {
+        event!(Level::INFO, "POE2 appears to be minimized"); // TODO: Replace INFO with WARN?
         return Ok(0) // Another catch for a minimized game
     }
 
     let screenshot = match screenshot_result {
         Ok(s) => s,
         // Err(error) => panic!("Path of Exile 2 does not appear to be open or is minimzed. Reason: {error}")
-        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something
+        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something, add log
     };
 
     let mask_result = get_mask(screenshot);
@@ -215,15 +212,18 @@ pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyho
 mod tests {
     use super::*;
 
-
-    #[test]
-    fn read_white_19950() {
-        let image = image::ImageReader::open(r"tests\images\19950.jpg")
+    fn open_test_image(path: &str) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
+        return image::ImageReader::open(path)
             .unwrap()
             .decode()
             .unwrap()
             .crop(576, 0, 1344, 65)
             .to_rgb8();
+    }
+
+    #[test]
+    fn read_white_19950() {
+        let image = open_test_image(r"tests\images\19950.jpg");
         let mask = get_mask(image).unwrap();
         let result = read_mask(mask).unwrap();
         assert_eq!(result, 19950);
@@ -231,12 +231,7 @@ mod tests {
 
     #[test]
     fn read_white_55837() {
-        let image = image::ImageReader::open(r"tests\images\55837.jpg")
-            .unwrap()
-            .decode()
-            .unwrap()
-            .crop(576, 0, 1344, 65)
-            .to_rgb8();
+        let image = open_test_image(r"tests\images\55837.jpg");
         let mask = get_mask(image).unwrap();
         let result = read_mask(mask).unwrap();
         assert_eq!(result, 55837);
@@ -244,12 +239,7 @@ mod tests {
 
     #[test]
     fn read_gray_203() {
-        let image = image::ImageReader::open(r"tests\images\203.jpg")
-            .unwrap()
-            .decode()
-            .unwrap()
-            .crop(576, 0, 1344, 65)
-            .to_rgb8();
+        let image = open_test_image(r"tests\images\203.jpg");
         let mask = get_mask(image).unwrap();
         let result = read_mask(mask).unwrap();
         assert_eq!(result, 203);
@@ -258,12 +248,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn read_no_damage() {
-        let image = image::ImageReader::open(r"tests\images\no_damage.jpg")
-            .unwrap()
-            .decode()
-            .unwrap()
-            .crop(576, 0, 1344, 65)
-            .to_rgb8();
+        let image = open_test_image(r"tests\images\no_damage.jpg");
         let mask = get_mask(image).unwrap();
         read_mask(mask).unwrap(); // No number to read
     }
