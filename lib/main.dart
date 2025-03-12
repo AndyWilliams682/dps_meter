@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:developer' as developer;
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:window_manager/window_manager.dart';
@@ -9,7 +10,15 @@ import 'package:window_manager/window_manager.dart';
 import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
 
-double logBase(num x, num base) => log(x) / log(base);
+Future setupLogger() async {
+    setupLogStream().listen((msg){
+    // This should use a logging framework in real applications
+        // print("${msg.logLevel} ${msg.lbl.padRight(8)}: ${msg.msg}");
+        developer.log("(Rust) ${msg.logLevel} ${msg.lbl.padRight(8)}: ${msg.msg}");
+    });
+}
+
+double logBase(num x, num base) => math.log(x) / math.log(base);
 
 String dpsDisplay(double dps) {
   if(dps <= 0) {
@@ -33,12 +42,13 @@ String dpsDisplay(double dps) {
     case > 4:
       letter = "e$magnitude"; // Use scientific beyond trillions
   }
-  return (dps / pow(1000, magnitude)).toStringAsFixed(decimalPlaces) + letter;
+  return (dps / math.pow(1000, magnitude)).toStringAsFixed(decimalPlaces) + letter;
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
+  await setupLogger();
   await windowManager.ensureInitialized();
 
   windowManager.setAlwaysOnTop(true);
@@ -121,15 +131,16 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _calculateOverallDps() {
-    overallDps = 1000 * max(0, damageHistory[damageHistory.length - 1]) / elapsedTime; // Converting to damage per second
+    overallDps = 1000 * math.max(0, damageHistory[damageHistory.length - 1]) / elapsedTime; // Converting to damage per second
   }
 
   void _calculateWindowDps() {
-    windowDps = 1000 * max(0, damageHistory[damageHistory.length - 1] -
-                        damageHistory[max(0, damageHistory.length - windowIndexSize - 1)]) / timeWindow;
+    windowDps = 1000 * math.max(0, damageHistory[damageHistory.length - 1] -
+                        damageHistory[math.max(0, damageHistory.length - windowIndexSize - 1)]) / timeWindow;
   }
 
   void _startTimer() {
+    developer.log("Starting capture loop");
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
         _captureDamage();
@@ -140,6 +151,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _stopTimer() {
+    developer.log("Stopping capture loop");
     damageHistory = [];
     accumulatedDamage = 0;
     elapsedTime = 0;

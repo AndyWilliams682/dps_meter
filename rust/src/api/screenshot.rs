@@ -7,7 +7,11 @@ use opencv::{
     imgproc::{bounding_rect, cvt_color, get_structuring_element, morphology_default_border_value, morphology_ex, COLOR_BGR2HSV, INTER_NEAREST, MORPH_DILATE, MORPH_OPEN, MORPH_RECT},
     prelude::MatTraitConstManual,
 };
-use tracing::{event, Level};
+use log::{info, warn};
+use flutter_logger;
+
+flutter_logger::flutter_logger_init!();
+
 
 const TEXT_MIN: Scalar = Scalar::new(0.0, 0.0, 104.0, 0.0);
 const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
@@ -25,7 +29,7 @@ fn capture_region(
 
     // TODO: Pick a specific window instead of searching through all of them
     for window in windows {
-        if window.title() == "Path of Exile 2" && !window.is_minimized() {
+        if window.title()? == "Path of Exile 2" && !window.is_minimized()? {
             let image = window
                 .capture_image()?
                 .sub_image(x, y, width, height)
@@ -173,7 +177,7 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
 
 
 pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyhow::Error> {
-    event!(Level::INFO, "Taking screenshot");
+    info!("Capturing screenshot");
     let screenshot_result = capture_region(
         x,
         y,
@@ -181,30 +185,41 @@ pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyho
         height
     );
 
-    if (width == 0) | (height == 0) {
-        event!(Level::INFO, "POE2 appears to be minimized"); // TODO: Replace INFO with WARN?
-        return Ok(0) // Another catch for a minimized game
-    }
-
     let screenshot = match screenshot_result {
-        Ok(s) => s,
-        // Err(error) => panic!("Path of Exile 2 does not appear to be open or is minimzed. Reason: {error}")
-        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something, add log
+        Ok(s) => {
+            info!("Screenshot succesfully captured");
+            s
+        },
+        Err(error) => return {
+            warn!("{error}");
+            Ok(0)
+        }
     };
 
     let mask_result = get_mask(screenshot);
 
     let mask = match mask_result {
-        Ok(s) => s,
-        // Err(error) => panic!("OpenCV was unable to process this screenshot. Reason: {error}")
-        Err(_) => return Ok(0) // TODO: Replace with returning an error code or something
+        Ok(s) => {
+            info!("Mask successfully generated");
+            s
+        },
+        Err(error) => return {
+            warn!("OpenCV was unable to process this screenshot. Reason: {error}");
+            Ok(0)
+        }
     };
 
     let damage_result = read_mask(mask);
 
     match damage_result {
-        Ok(s) => return Ok(s),
-        Err(_) => return Ok(0)
+        Ok(s) => return {
+            info!("Damage read: {s}");
+            Ok(s)
+        },
+        Err(error) => return {
+            info!("Tesseract was unable to detect a number. Reason: {error}");
+            Ok(0)
+        }
     }
 }
 

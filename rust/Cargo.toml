@@ -8,11 +8,12 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.7.0"
-xcap = "0.2.2"
+xcap = "0.4.0"
 opencv = "0.94.2"
 anyhow = "1.0.95"
 image = "^0.25.2"
 ndarray = "0.16.1"
 tesseract-static = { version = "0.2.0", features = ["parse"] }
 tempfile = "3.4.0"
-tracing = "^0.1.41"
+log = "^0.4.26"
+flutter_logger = "0.6.1"
