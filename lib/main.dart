@@ -10,10 +10,9 @@ import 'package:window_manager/window_manager.dart';
 import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
 
+
 Future setupLogger() async {
     setupLogStream().listen((msg){
-    // This should use a logging framework in real applications
-        // print("${msg.logLevel} ${msg.lbl.padRight(8)}: ${msg.msg}");
         developer.log("(Rust) ${msg.logLevel} ${msg.lbl.padRight(8)}: ${msg.msg}");
     });
 }
@@ -175,11 +174,11 @@ class MainPage extends StatelessWidget {
     var overallDps = appState.overallDps;
     var windowDps = appState.windowDps;
 
-    IconData icon;
+    IconData capturingIcon;
     if (appState.isCapturing) {
-      icon = Icons.pause;
+      capturingIcon = Icons.pause;
     } else {
-      icon = Icons.play_arrow;
+      capturingIcon = Icons.play_arrow;
     }
 
     return MaterialApp(
@@ -189,7 +188,7 @@ class MainPage extends StatelessWidget {
         body: Center(
           child: Row(
             children: [
-              IconButton(icon: Icon(icon), onPressed: appState.toggleCapturing),
+              IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
               DragToMoveArea(
                 child: Column(
                   children: [
@@ -199,7 +198,7 @@ class MainPage extends StatelessWidget {
                   ],
                 ),
               ),
-              CloseButton(onPressed: () {
+              IconButton(icon: Icon(Icons.close), onPressed: () {
                 exit(0);
               }),
             ],
