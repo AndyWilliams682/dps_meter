@@ -27,9 +27,9 @@ fn capture_region(
 ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, xcap::XCapError> {
     let windows = Window::all()?;
 
-    // TODO: Pick a specific window instead of searching through all of them
+    // TODO: Pick a specific window instead of searching through all of them (may need to cache it somehow)
     for window in windows {
-        if window.title()? == "Path of Exile 2" && !window.is_minimized()? {
+        if window.title()? == "PathOfExileSteam" && !window.is_minimized()? {
             let image = window
                 .capture_image()?
                 .sub_image(x, y, width, height)
@@ -155,13 +155,14 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
         .suffix(".bmp")
         .rand_bytes(5)
         .tempfile()?;
-    
+
     let path = tempfile.path();
     mask.save(path)?;
 
+    // TODO: This shouldn't happen every single time (either check if it exists or do it once prior in the main func)
     let parent = std::env::temp_dir();
     std::fs::write(&parent.join("eng.traineddata"), &TRAINING_DATA[..])?;
-    
+
     let raw_ocr = Tesseract::new(
             Some(&parent.display().to_string()),
             Some("eng"),
@@ -217,7 +218,7 @@ pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyho
             Ok(s)
         },
         Err(error) => return {
-            info!("Tesseract was unable to detect a number. Reason: {error}");
+            warn!("Tesseract was unable to detect a number. Reason: {error}");
             Ok(0)
         }
     }
