@@ -96,7 +96,9 @@ class MyAppState extends ChangeNotifier {
   var elapsedTime = 0;
 
   var windowDps = 0.0;
-  var overallDps = 0.0;
+  var overallDps = 0.0; // TODO: Add a stopwatch-like time thing in the label (for measuring TTK a boss?)
+
+  var isExpanded = false;
 
   void toggleCapturing() async {
     isCapturing = !isCapturing;
@@ -163,6 +165,16 @@ class MyAppState extends ChangeNotifier {
     _stopTimer(); // Important: Cancel the timer when the widget is disposed
     super.dispose();
   }
+
+  void toggleExpanded() {
+    isExpanded = !isExpanded;
+    if (isExpanded) {
+      windowManager.setSize(Size(600, 500)); // TODO: Add these values somewhere as constants
+    } else {
+      windowManager.setSize(Size(200, 50));
+    }
+    notifyListeners();
+  }
 }
 
 class MainPage extends StatelessWidget {
@@ -186,21 +198,35 @@ class MainPage extends StatelessWidget {
       home: Scaffold(
         backgroundColor: Color.fromRGBO(0, 0, 0, 0.0),
         body: Center(
-          child: Row(
+          child: Column(
             children: [
-              IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
-              DragToMoveArea(
-                child: Column(
-                  children: [
-                    Text("Overall DPS: ${dpsDisplay(overallDps)}", style: TextStyle(color: Colors.white)),
-                    SizedBox(height: 2),
-                    Text("Recent DPS: ${dpsDisplay(windowDps)}", style: TextStyle(color: Colors.white)),
-                  ],
-                ),
+              Row(
+                children: [
+                  IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
+                  IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
+                  DragToMoveArea(
+                    child: Column(
+                      children: [
+                        Text("Overall DPS: ${dpsDisplay(overallDps)}", style: TextStyle(color: Colors.white)),
+                        SizedBox(height: 2),
+                        Text("Recent DPS: ${dpsDisplay(windowDps)}", style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  IconButton(icon: Icon(Icons.close), onPressed: () {
+                    exit(0);
+                  }),
+                ],
               ),
-              IconButton(icon: Icon(Icons.close), onPressed: () {
-                exit(0);
-              }),
+              Visibility(
+                visible: appState.isExpanded,
+                child: Container( // TODO: Add the tabs, and their content
+                  width: 100,
+                  height: 100 ,
+                  color: Colors.blue,
+                  child: Center(child: Text("I'm visible")),
+                ),
+              )
             ],
           ),
         ),
