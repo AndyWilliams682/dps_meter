@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:developer' as developer;
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:window_manager/window_manager.dart';
-import 'package:flutter_logs/flutter_logs.dart';
+import 'package:logging_flutter/logging_flutter.dart';
 
 import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
@@ -14,7 +13,11 @@ import 'package:dps_meter/src/rust/frb_generated.dart';
 
 Future setupLogger() async {
     setupLogStream().listen((msg){
-        developer.log("(Rust) ${msg.logLevel} ${msg.lbl.padRight(8)}: ${msg.msg}");
+      if (msg.logLevel.toString() == "Level.info") {
+        Flogger.i(msg.msg, loggerName: "Rust");
+      } else {
+        Flogger.w(msg.msg, loggerName: "Rust");
+      }
     });
 }
 
@@ -48,8 +51,19 @@ String dpsDisplay(double dps) {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
-  await setupLogger();
   await windowManager.ensureInitialized();
+
+  Flogger.init(
+    config: FloggerConfig(
+      showDateTime: true,
+    )
+  );
+  Flogger.registerListener(
+    (record) => LogConsole.add(
+      OutputEvent(record.level, [record.printable()]),
+      bufferSize: 100, // Remember the last X logs
+    ),
+  );
 
   windowManager.setAlwaysOnTop(true);
   windowManager.setOpacity(1.0);
@@ -58,6 +72,7 @@ Future<void> main() async {
   var currentPosition = await windowManager.getPosition();
   windowManager.setPosition(Offset(currentPosition.dx, 0));
   windowManager.setSize(Size(200, 50));
+  await setupLogger(); // TODO: Do I need to kill this when app is disposed?
   
   runApp(const MyApp());
   windowManager.waitUntilReadyToShow().then((_) async{
@@ -76,6 +91,7 @@ class MyApp extends StatelessWidget {
         title: 'DPS Meter',
         theme: ThemeData(
           useMaterial3: true,
+          brightness: Brightness.dark,
           textTheme: TextTheme(
             bodySmall: TextStyle(
               fontFamily: 'Fontin',
@@ -148,7 +164,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _startTimer() {
-    developer.log("Starting capture loop");
+    Flogger.i("Starting capture loop");
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
         _captureDamage();
@@ -159,7 +175,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _stopTimer() {
-    developer.log("Stopping capture loop");
+    Flogger.i("Stopping capture loop");
     damageHistory = [];
     accumulatedDamage = 0;
     elapsedTime = 0;
@@ -257,12 +273,15 @@ Widget _tabSection(BuildContext context) {
           unselectedLabelStyle: TextStyle(color: Colors.grey),
         ),
         SizedBox(
-          height: MediaQuery.of(context).size.height,
+          height: 405,
           child: TabBarView(
             children: [
               Text("History Body"),
               Text("Settings Body"),
-              Text("Debug Body", style: TextStyle(color: Colors.white)),
+              LogConsole(
+                dark: true,
+                showCloseButton: false,
+              ),
             ],
           ),
         ),
