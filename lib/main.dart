@@ -55,7 +55,7 @@ Future<void> main() async {
 
   Flogger.init(
     config: FloggerConfig(
-      showDateTime: true,
+      showDateTime: true, // TODO: Could expand on config
     )
   );
   Flogger.registerListener(
@@ -92,10 +92,15 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
+          scaffoldBackgroundColor: Color.fromRGBO(0, 0, 0, 1.0),
           textTheme: TextTheme(
-            bodySmall: TextStyle(
+            labelLarge: TextStyle(
               fontFamily: 'Fontin',
               color: Colors.white
+            ),
+            bodyMedium: TextStyle(
+              fontFamily: 'Fontin',
+              color: Colors.grey
             )
           )
         ),
@@ -217,12 +222,13 @@ class MainPage extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final fontStyle = theme.textTheme.bodySmall;
+    final fontStyle = theme.textTheme.labelLarge;
+    final scaffoldColor = theme.scaffoldBackgroundColor;
 
     return MaterialApp(
       theme: theme,
       home: Scaffold(
-        backgroundColor: Color.fromRGBO(0, 0, 0, 1.0),
+        backgroundColor: scaffoldColor,
         body: Center(
           child: Column(
             children: [
@@ -257,6 +263,10 @@ class MainPage extends StatelessWidget {
 }
 
 Widget _tabSection(BuildContext context) {
+  final theme = Theme.of(context);
+  final selectedFontStyle = theme.textTheme.labelLarge;
+  final unselectedFontStyle = theme.textTheme.bodySmall;
+
   return DefaultTabController(
     length: 3,
     child: Column(
@@ -269,8 +279,8 @@ Widget _tabSection(BuildContext context) {
             Tab(text: "Settings"),
             Tab(text: "Debug"),
           ],
-          labelStyle: TextStyle(color: Colors.white), // TODO: Need to make the theme inherited from the top
-          unselectedLabelStyle: TextStyle(color: Colors.grey),
+          labelStyle: selectedFontStyle,
+          unselectedLabelStyle: unselectedFontStyle,
         ),
         SizedBox(
           height: 405,
