@@ -80,6 +80,7 @@ Future<void> main() async {
   windowManager.waitUntilReadyToShow().then((_) async{
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
   });
+  Flogger.i("App initalized");
 }
 
 class MyApp extends StatelessWidget {
