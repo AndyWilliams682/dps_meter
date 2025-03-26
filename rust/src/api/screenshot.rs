@@ -29,7 +29,7 @@ fn capture_region(
 
     // TODO: Pick a specific window instead of searching through all of them (may need to cache it somehow)
     for window in windows {
-        if window.title()? == "PathOfExileSteam" && !window.is_minimized()? {
+        if window.title()? == "Path of Exile 2" && !window.is_minimized()? {
             let image = window
                 .capture_image()?
                 .sub_image(x, y, width, height)
