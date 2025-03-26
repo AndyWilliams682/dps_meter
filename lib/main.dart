@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'dart:io';
 
 import 'package:window_manager/window_manager.dart';
+import 'package:flutter_logs/flutter_logs.dart';
 
 import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
@@ -51,7 +52,7 @@ Future<void> main() async {
   await windowManager.ensureInitialized();
 
   windowManager.setAlwaysOnTop(true);
-  windowManager.setOpacity(0.6);
+  windowManager.setOpacity(1.0);
 
   await windowManager.center();
   var currentPosition = await windowManager.getPosition();
@@ -75,6 +76,12 @@ class MyApp extends StatelessWidget {
         title: 'DPS Meter',
         theme: ThemeData(
           useMaterial3: true,
+          textTheme: TextTheme(
+            bodySmall: TextStyle(
+              fontFamily: 'Fontin',
+              color: Colors.white
+            )
+          )
         ),
         home: MainPage(),
       ),
@@ -131,7 +138,7 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _calculateOverallDps() {
+  void _calculateOverallDps() { // TODO: Move to a utils file
     overallDps = 1000 * math.max(0, damageHistory[damageHistory.length - 1]) / elapsedTime; // Converting to damage per second
   }
 
@@ -193,10 +200,13 @@ class MainPage extends StatelessWidget {
       capturingIcon = Icons.play_arrow;
     }
 
+    final theme = Theme.of(context);
+    final fontStyle = theme.textTheme.bodySmall;
+
     return MaterialApp(
-      theme: ThemeData(fontFamily: 'Fontin'),
+      theme: theme,
       home: Scaffold(
-        backgroundColor: Color.fromRGBO(0, 0, 0, 0.0),
+        backgroundColor: Color.fromRGBO(0, 0, 0, 1.0),
         body: Center(
           child: Column(
             children: [
@@ -207,9 +217,9 @@ class MainPage extends StatelessWidget {
                   DragToMoveArea(
                     child: Column(
                       children: [
-                        Text("Overall DPS: ${dpsDisplay(overallDps)}", style: TextStyle(color: Colors.white)),
+                        Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),
                         SizedBox(height: 2),
-                        Text("Recent DPS: ${dpsDisplay(windowDps)}", style: TextStyle(color: Colors.white)),
+                        Text("Recent DPS: ${dpsDisplay(windowDps)}", style: fontStyle),
                       ],
                     ),
                   ),
@@ -220,12 +230,7 @@ class MainPage extends StatelessWidget {
               ),
               Visibility(
                 visible: appState.isExpanded,
-                child: Container( // TODO: Add the tabs, and their content
-                  width: 100,
-                  height: 100 ,
-                  color: Colors.blue,
-                  child: Center(child: Text("I'm visible")),
-                ),
+                child: _tabSection(context),
               )
             ],
           ),
@@ -233,4 +238,35 @@ class MainPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _tabSection(BuildContext context) {
+  return DefaultTabController(
+    length: 3,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+
+      children: <Widget>[
+        TabBar(
+          tabs: [
+            Tab(text: "History"),
+            Tab(text: "Settings"),
+            Tab(text: "Debug"),
+          ],
+          labelStyle: TextStyle(color: Colors.white), // TODO: Need to make the theme inherited from the top
+          unselectedLabelStyle: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: TabBarView(
+            children: [
+              Text("History Body"),
+              Text("Settings Body"),
+              Text("Debug Body", style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
