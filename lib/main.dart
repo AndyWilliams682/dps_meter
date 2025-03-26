@@ -55,7 +55,9 @@ Future<void> main() async {
 
   Flogger.init(
     config: FloggerConfig(
-      showDateTime: true, // TODO: Could expand on config
+      showDateTime: true,
+      printClassName: false,
+      printMethodName: false,
     )
   );
   Flogger.registerListener(
@@ -121,10 +123,10 @@ class MyAppState extends ChangeNotifier {
   var dt = 1000; // ms
   var timeWindow = 4000; // ms
   var windowIndexSize = 4000 ~/ 1000;
-  var elapsedTime = 0;
+  var elapsedTime = 0; // TODO: Add elapsedTime and accumulatedDamage probably
 
   var windowDps = 0.0;
-  var overallDps = 0.0; // TODO: Add a stopwatch-like time thing in the label (for measuring TTK a boss?)
+  var overallDps = 0.0;
 
   var isExpanded = false;
 
