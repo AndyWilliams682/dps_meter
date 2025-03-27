@@ -36,7 +36,7 @@ fn capture_region_from_application(
 
             let dimensions = image.dimensions();
 
-            // May need to pass these as arguments from user settings?
+            // TODO: May need to pass these as arguments from user settings?
             // Or set up a way to automatically find them and save them
             let x = (0.3 * (dimensions.0 as f32)).floor() as u32;
             let y = 0;
@@ -183,6 +183,7 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
     mask.save(path)?;
 
     // TODO: This shouldn't happen every single time (either check if it exists or do it once prior in the main func)
+    // Maybe I can use a constant?
     let parent = std::env::temp_dir();
     std::fs::write(&parent.join("eng.traineddata"), &TRAINING_DATA[..])?;
 

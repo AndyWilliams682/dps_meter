@@ -235,23 +235,23 @@ class MainPage extends StatelessWidget {
         body: Center(
           child: Column(
             children: [
-              Row(
-                children: [
-                  IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
-                  IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
-                  DragToMoveArea( // TODO: Make the whole row draggable, and add a little line or something between the column stuff
-                    child: Column(
+              DragToMoveArea(
+                child: Row(
+                  children: [
+                    IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
+                    IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
+                    Column(
                       children: [
                         Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),
                         SizedBox(height: 2),
                         Text("Recent DPS: ${dpsDisplay(windowDps)}", style: fontStyle),
                       ],
                     ),
-                  ),
-                  IconButton(icon: Icon(Icons.close), onPressed: () {
-                    exit(0);
-                  }),
-                ],
+                    IconButton(icon: Icon(Icons.close), onPressed: () {
+                      exit(0);
+                    }),
+                  ],
+                ),
               ),
               Visibility(
                 visible: appState.isExpanded,
