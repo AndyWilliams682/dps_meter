@@ -37,6 +37,7 @@ fn capture_region_from_application(
             let dimensions = image.dimensions();
 
             // May need to pass these as arguments from user settings?
+            // Or set up a way to automatically find them and save them
             let x = (0.3 * (dimensions.0 as f32)).floor() as u32;
             let y = 0;
             let width = (0.4 * (dimensions.0 as f32)).floor() as u32;
@@ -292,7 +293,10 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn inspect_screenshot() {
+        // TODO: Make an image that is always used for this test so the game doesn't need to run
+        // Maybe we can even automate the validation check
         let screenshot = capture_region_from_application(0, 0, 0, 0, "Path of Exile 2".to_string());
         screenshot.unwrap().save("inspect_screenshot.png").unwrap();
     }
