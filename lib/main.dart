@@ -14,9 +14,9 @@ import 'package:dps_meter/src/rust/frb_generated.dart';
 Future setupLogger() async {
     setupLogStream().listen((msg){
       if (msg.logLevel.toString() == "Level.info") {
-        Flogger.i(msg.msg, loggerName: "Rust");
+        Flogger.i(msg.msg);
       } else {
-        Flogger.w(msg.msg, loggerName: "Rust");
+        Flogger.w(msg.msg);
       }
     });
 }
