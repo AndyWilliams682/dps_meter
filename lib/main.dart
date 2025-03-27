@@ -239,7 +239,7 @@ class MainPage extends StatelessWidget {
                 children: [
                   IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
                   IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
-                  DragToMoveArea(
+                  DragToMoveArea( // TODO: Make the whole row draggable, and add a little line or something between the column stuff
                     child: Column(
                       children: [
                         Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),

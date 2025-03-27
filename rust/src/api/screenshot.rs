@@ -8,8 +8,8 @@ use opencv::{
     prelude::MatTraitConstManual,
 };
 use log::{info, warn};
-use flutter_logger;
 
+use flutter_logger;
 flutter_logger::flutter_logger_init!();
 
 
@@ -19,25 +19,47 @@ const TEXT_MAX: Scalar = Scalar::new(165.0, 13.0, 255.0, 0.0);
 const TRAINING_DATA: &[u8] = include_bytes!("./eng.traineddata");
 
 
-fn capture_region(
+fn capture_region_from_application(
     x: u32,
     y: u32,
     width: u32,
-    height: u32
+    height: u32,
+    app_title: String
 ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, xcap::XCapError> {
     let windows = Window::all()?;
 
     // TODO: Pick a specific window instead of searching through all of them (may need to cache it somehow)
     for window in windows {
-        if window.title()? == "Path of Exile 2" && !window.is_minimized()? {
-            let image = window
-                .capture_image()?
+        if window.title()? == app_title && !window.is_minimized()? {
+            let mut image = window
+                .capture_image()?;
+
+            let dimensions = image.dimensions();
+
+            // May need to pass these as arguments from user settings?
+            let x = (0.3 * (dimensions.0 as f32)).floor() as u32;
+            let y = 0;
+            let width = (0.4 * (dimensions.0 as f32)).floor() as u32;
+            let height = (0.07 * (dimensions.1 as f32)).ceil() as u32;
+
+            let image = image
                 .sub_image(x, y, width, height)
                 .to_image();
+
             return Ok(DynamicImage::ImageRgba8(image).into_rgb8())
         }
     }
-    return Err(xcap::XCapError::new("Path of Exile 2 is either not open, or minimized".to_string())) // TODO: Make error types
+    return Err(xcap::XCapError::new(format!("{app_title} is either not open, or minimized"))) // TODO: Make error types 
+}
+
+
+fn capture_region_from_poe2(
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32
+) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, xcap::XCapError> {
+    capture_region_from_application(x, y, width, height, "Path of Exile 2".to_string())
 }
 
 
@@ -179,7 +201,7 @@ fn read_mask(mask: DynamicImage) -> Result<u32, anyhow::Error> {
 
 pub fn read_damage(x: u32, y: u32, width: u32, height: u32) -> Result<u32, anyhow::Error> {
     info!("Capturing screenshot");
-    let screenshot_result = capture_region(
+    let screenshot_result = capture_region_from_poe2(
         x,
         y,
         width,
@@ -267,5 +289,11 @@ mod tests {
         let image = open_test_image(r"tests\images\no_damage.jpg");
         let mask = get_mask(image).unwrap();
         read_mask(mask).unwrap(); // No number to read
+    }
+
+    #[test]
+    fn inspect_screenshot() {
+        let screenshot = capture_region_from_application(0, 0, 0, 0, "Path of Exile 2".to_string());
+        screenshot.unwrap().save("inspect_screenshot.png").unwrap();
     }
 }
