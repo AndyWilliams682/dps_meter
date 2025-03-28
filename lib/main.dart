@@ -11,6 +11,9 @@ import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
 
 
+const collapsedSize = Size(230, 50);
+const expandedSize = Size(600, 500);
+
 Future setupLogger() async {
     setupLogStream().listen((msg){
       if (msg.logLevel.toString() == "Level.info") {
@@ -73,7 +76,7 @@ Future<void> main() async {
   await windowManager.center();
   var currentPosition = await windowManager.getPosition();
   windowManager.setPosition(Offset(currentPosition.dx, 0));
-  windowManager.setSize(Size(200, 50));
+  windowManager.setSize(collapsedSize);
   await setupLogger(); // TODO: Do I need to kill this when app is disposed?
   
   runApp(const MyApp());
@@ -200,9 +203,9 @@ class MyAppState extends ChangeNotifier {
   void toggleExpanded() {
     isExpanded = !isExpanded;
     if (isExpanded) {
-      windowManager.setSize(Size(600, 500)); // TODO: Add these values somewhere as constants
+      windowManager.setSize(expandedSize);
     } else {
-      windowManager.setSize(Size(200, 50));
+      windowManager.setSize(collapsedSize);
     }
     notifyListeners();
   }
