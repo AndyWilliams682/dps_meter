@@ -32,7 +32,7 @@ String calcMultiplier(double referenceDps, double comparisonDps) {
   if (multiplier < 0) {
     indicatingWord = "Less";
   }
-  return "$multiplier% $indicatingWord";
+  return "${multiplier.abs()}% $indicatingWord";
 }
 
 String dpsDisplay(double dps) {
@@ -403,7 +403,7 @@ class HistoryRadio extends StatelessWidget {
                 onChanged(newValue!);
               },
             ),
-            Text(label),
+            Expanded(child:Text(label)), // Add 
           ],
         ),
       ),
@@ -415,36 +415,55 @@ Widget _historyTab(BuildContext context) {
   var appState = context.watch<MyAppState>();
   var history = appState.measurementHistory;
 
-  return ListView.builder(
-    itemCount: 3,
-    prototypeItem: Row(
-      children: [
-        HistoryRadio(
-          label: 'This is the first label text',
-          padding: const EdgeInsets.symmetric(horizontal: 5.0),
-          value: true,
-          groupValue: true,
-          onChanged: (bool newValue) {},
+  return Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(8.0), // TODO: Change hard-coded value?
+        child: Row(
+          children: [
+            SizedBox(width: 35), // TODO: Remove hard-coded value
+            Expanded(child: Text('Name', textAlign: TextAlign.center,)),
+            Expanded(child: Text('Time\n(s)', textAlign: TextAlign.center)),
+            Expanded(child: Text('Total\nDamage', textAlign: TextAlign.center)),
+            Expanded(child: Text('Overall\nDPS', textAlign: TextAlign.center)),
+            Expanded(child: Text('Comparison\n(% More/Less)', textAlign: TextAlign.center)),
+          ],
         ),
-        Text("This is the first column"), Text("This is the second")
-      ],
-    ),
-    itemBuilder: (context, index) {
-      return Row(
-        children: [
-          HistoryRadio(
-            label: 'Item ${index + 1}',
-            padding: const EdgeInsets.symmetric(horizontal: 5.0),
-            value: true,
-            groupValue: appState.isRadioSelectedList[index],
-            onChanged: (bool newValue) {
-              appState.setRadioSelected(index, newValue);
-            },
+      ),
+      Expanded(
+        child: ListView.builder(
+          itemCount: 3,
+          prototypeItem: Row(
+            children: [
+              HistoryRadio(
+                label: 'This is the first label text',
+                padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                value: true,
+                groupValue: true,
+                onChanged: (bool newValue) {},
+              ),
+              Text("This is the first column"), Text("This is the second")
+            ],
           ),
-          Text("${history[index].totalTime}, ${history[index].totalDamage}, ${dpsDisplay(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
-        ]
-      );
-    },
+          itemBuilder: (context, index) {
+            return Row(
+              children: [
+                HistoryRadio(
+                  label: 'Item ${index + 1}',
+                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                  value: true,
+                  groupValue: appState.isRadioSelectedList[index],
+                  onChanged: (bool newValue) {
+                    appState.setRadioSelected(index, newValue);
+                  },
+                ),
+                Text("${history[index].totalTime}, ${history[index].totalDamage}, ${dpsDisplay(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
+              ] // TODO: Color more/less based on positive/negative (and maybe magnitude?) or Bold the highest/lowest?
+            );
+          },
+        ),
+      ),
+    ],
   );
 }
 
