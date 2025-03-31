@@ -26,6 +26,15 @@ Future setupLogger() async {
 
 double logBase(num x, num base) => math.log(x) / math.log(base);
 
+String calcMultiplier(double referenceDps, double comparisonDps) {
+  var multiplier = (comparisonDps / referenceDps - 1) * 100;
+  var indicatingWord = "More";
+  if (multiplier < 0) {
+    indicatingWord = "Less";
+  }
+  return "$multiplier% $indicatingWord";
+}
+
 String dpsDisplay(double dps) {
   if(dps <= 0) {
     return "0";
@@ -49,6 +58,17 @@ String dpsDisplay(double dps) {
       letter = "e$magnitude"; // Use scientific beyond trillions
   }
   return (dps / math.pow(1000, magnitude)).toStringAsFixed(decimalPlaces) + letter;
+}
+
+class MeasurementLabels {
+  String? name;
+  String? totalTime;
+  String? totalDamage;
+  double overallDps; // This stays as a number for future calculations, display using displayDps
+  String comparisonMultiplier = "-";
+  final DateTime dateTime = DateTime.now();
+
+  MeasurementLabels({this.name, this.totalTime, this.totalDamage, this.overallDps = 0});
 }
 
 Future<void> main() async {
@@ -127,12 +147,49 @@ class MyAppState extends ChangeNotifier {
   var dt = 1000; // ms
   var timeWindow = 4000; // ms
   var windowIndexSize = 4000 ~/ 1000;
-  var elapsedTime = 0; // TODO: Add elapsedTime and accumulatedDamage probably
+  var elapsedTime = 0;
 
   var windowDps = 0.0;
   var overallDps = 0.0;
 
   var isExpanded = false;
+
+  var measurementHistory = <MeasurementLabels>[ // TODO: Init this empty and add new things to it
+    MeasurementLabels(
+      name: "Test 1",
+      totalTime: "10s",
+      totalDamage: "5000",
+      overallDps: 5000 / 10,
+    ),
+    MeasurementLabels(
+      name: "Test 2",
+      totalTime: "10s",
+      totalDamage: "10000",
+      overallDps: 10000 / 10,
+    ),
+    MeasurementLabels(
+      name: "Test 3",
+      totalTime: "20s",
+      totalDamage: "5000",
+      overallDps: 5000 / 20,
+    )
+  ];
+  
+  List<bool> isRadioSelectedList = [false, false, false]; // Initialize with the first one selected
+
+  void setRadioSelected(int index, bool newValue) {
+    // Deselect all others in the list
+    for (int i = 0; i < isRadioSelectedList.length; i++) {
+      if (i != index) {
+        isRadioSelectedList[i] = false;
+        measurementHistory[i].comparisonMultiplier = calcMultiplier(measurementHistory[index].overallDps, measurementHistory[i].overallDps);
+      } else {
+        measurementHistory[i].comparisonMultiplier = "-";
+      }
+    }
+    isRadioSelectedList[index] = newValue;
+    notifyListeners();
+  }
 
   void toggleCapturing() async {
     isCapturing = !isCapturing;
@@ -145,7 +202,7 @@ class MyAppState extends ChangeNotifier {
   }
 
   void _captureDamage() async {
-    damageReading = (await readDamage(x: 576, y: 0, width: 1344, height: 65)); // TODO: Remove hard-coded values
+    damageReading = (await readDamage(x: 0, y: 0, width: 0, height: 0)); // TODO: May need to pass dimensions from settings?
 
     if (damageReading == 0) {
       if (damageHistory.isEmpty) {
@@ -217,18 +274,8 @@ class MainPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {   
     var appState = context.watch<MyAppState>();
-    var overallDps = appState.overallDps;
-    var windowDps = appState.windowDps;
-
-    IconData capturingIcon;
-    if (appState.isCapturing) {
-      capturingIcon = Icons.pause;
-    } else {
-      capturingIcon = Icons.play_arrow;
-    }
 
     final theme = Theme.of(context);
-    final fontStyle = theme.textTheme.labelLarge;
     final scaffoldColor = theme.scaffoldBackgroundColor;
 
     return MaterialApp(
@@ -238,27 +285,10 @@ class MainPage extends StatelessWidget {
         body: Center(
           child: Column(
             children: [
-              DragToMoveArea(
-                child: Row(
-                  children: [
-                    IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
-                    IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
-                    Column(
-                      children: [
-                        Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),
-                        SizedBox(height: 2),
-                        Text("Recent DPS: ${dpsDisplay(windowDps)}", style: fontStyle),
-                      ],
-                    ),
-                    IconButton(icon: Icon(Icons.close), onPressed: () {
-                      exit(0);
-                    }),
-                  ],
-                ),
-              ),
+              _collapsedSection(context),
               Visibility(
                 visible: appState.isExpanded,
-                child: _tabSection(context),
+                child: _expandedSection(context),
               )
             ],
           ),
@@ -268,7 +298,42 @@ class MainPage extends StatelessWidget {
   }
 }
 
-Widget _tabSection(BuildContext context) {
+Widget _collapsedSection(BuildContext context) {
+  var appState = context.watch<MyAppState>();
+  var overallDps = appState.overallDps;
+  var windowDps = appState.windowDps;
+
+  final theme = Theme.of(context);
+  final fontStyle = theme.textTheme.labelLarge;
+
+  IconData capturingIcon;
+    if (appState.isCapturing) {
+      capturingIcon = Icons.pause;
+    } else {
+      capturingIcon = Icons.play_arrow;
+    }
+
+  return DragToMoveArea(
+    child: Row(
+      children: [
+        IconButton(icon: Icon(Icons.menu), onPressed: appState.toggleExpanded),
+        IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
+        Column(
+          children: [
+            Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),
+            SizedBox(height: 2),
+            Text("Recent DPS: ${dpsDisplay(windowDps)}", style: fontStyle),
+          ],
+        ),
+        IconButton(icon: Icon(Icons.close), onPressed: () {
+          exit(0);
+        }),
+      ],
+    ),
+  );
+}
+
+Widget _expandedSection(BuildContext context) {
   final theme = Theme.of(context);
   final selectedFontStyle = theme.textTheme.labelLarge;
   final unselectedFontStyle = theme.textTheme.bodySmall;
@@ -289,19 +354,103 @@ Widget _tabSection(BuildContext context) {
           unselectedLabelStyle: unselectedFontStyle,
         ),
         SizedBox(
-          height: 405,
+          height: 402.8, // TODO: Un-hard-code this value
           child: TabBarView(
             children: [
-              Text("History Body"),
+              _historyTab(context),
               Text("Settings Body"),
-              LogConsole(
-                dark: true,
-                showCloseButton: false,
-              ),
+              _debugTab(context),
             ],
           ),
         ),
       ],
     ),
+  );
+}
+
+class HistoryRadio extends StatelessWidget {
+  const HistoryRadio({
+    super.key,
+    required this.label,
+    required this.padding,
+    required this.groupValue,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final EdgeInsets padding;
+  final bool groupValue;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        if (value != groupValue) {
+          onChanged(value);
+        }
+      },
+      child: Padding(
+        padding: padding,
+        child: Row(
+          children: <Widget>[
+            Radio<bool>(
+              groupValue: groupValue,
+              value: value,
+              onChanged: (bool? newValue) {
+                onChanged(newValue!);
+              },
+            ),
+            Text(label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _historyTab(BuildContext context) {
+  var appState = context.watch<MyAppState>();
+  var history = appState.measurementHistory;
+
+  return ListView.builder(
+    itemCount: 3,
+    prototypeItem: Row(
+      children: [
+        HistoryRadio(
+          label: 'This is the first label text',
+          padding: const EdgeInsets.symmetric(horizontal: 5.0),
+          value: true,
+          groupValue: true,
+          onChanged: (bool newValue) {},
+        ),
+        Text("This is the first column"), Text("This is the second")
+      ],
+    ),
+    itemBuilder: (context, index) {
+      return Row(
+        children: [
+          HistoryRadio(
+            label: 'Item ${index + 1}',
+            padding: const EdgeInsets.symmetric(horizontal: 5.0),
+            value: true,
+            groupValue: appState.isRadioSelectedList[index],
+            onChanged: (bool newValue) {
+              appState.setRadioSelected(index, newValue);
+            },
+          ),
+          Text("${history[index].totalTime}, ${history[index].totalDamage}, ${dpsDisplay(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
+        ]
+      );
+    },
+  );
+}
+
+Widget _debugTab(BuildContext context) {
+  return LogConsole(
+    dark: true,
+    showCloseButton: false,
   );
 }
