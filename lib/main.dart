@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io';
+import 'dart:convert';
 
 import 'package:window_manager/window_manager.dart';
 import 'package:logging_flutter/logging_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
@@ -65,6 +68,39 @@ String displayDps(double dps) {
   return (dps / math.pow(1000, magnitude)).toStringAsFixed(decimalPlaces) + letter;
 }
 
+Future<String?> getLatestReleaseTag() async {
+  final url = Uri.parse('https://api.github.com/repos/AndyWilliams682/dps_meter/releases/latest');
+  try {
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['name'] as String?;
+    } else {
+      debugPrint('Failed to fetch latest release: ${response.statusCode}');
+      return null;
+    }
+  } catch (e) {
+    debugPrint('Error fetching latest release: $e');
+    return null;
+  }
+}
+
+Future<String?> getCurrentAppVersion() async {
+  return "0.1.0"; // TODO: Replace with a more automated check so this doesn't have to be updated every release
+}
+
+Future<bool> isNewVersionAvailable() async {
+    final latestTag = await getLatestReleaseTag();
+    final currentVersion = await getCurrentAppVersion();
+
+    if (latestTag == null || currentVersion == null) {
+      return false;
+    }
+
+    final latestVersionWithoutPrefix = latestTag.startsWith('v') ? latestTag.substring(1) : latestTag;
+    return latestVersionWithoutPrefix != currentVersion;
+  }
+
 class MeasurementLabels {
   MeasurementLabels({
     required this.name,
@@ -100,6 +136,9 @@ Future<void> main() async {
     ),
   );
 
+  final bool updateAvailable = await isNewVersionAvailable();
+  Flogger.i("Any updates available? ${updateAvailable ? "Yes" : "No"}");
+
   windowManager.setAlwaysOnTop(true);
   windowManager.setOpacity(1.0);
 
@@ -109,7 +148,7 @@ Future<void> main() async {
   windowManager.setSize(collapsedSize);
   await setupLogger(); // TODO: Do I need to kill this when app is disposed?
   
-  runApp(const MyApp());
+  runApp(MyApp(updateAvailable: updateAvailable));
   windowManager.waitUntilReadyToShow().then((_) async{
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
   });
@@ -117,12 +156,14 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool updateAvailable;
+
+  const MyApp({super.key, required this.updateAvailable});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
+      create: (context) => MyAppState(updateAvailable: updateAvailable),
       child: MaterialApp(
         title: 'DPS Meter',
         theme: ThemeData(
@@ -147,6 +188,11 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
+  final bool updateAvailable;
+  MyAppState({required this.updateAvailable});
+  
+  var hideUpdateLink = false;
+
   var isCapturing = false;
   Timer? timer;
 
@@ -224,6 +270,9 @@ class MyAppState extends ChangeNotifier {
 
   void _startTimer() {
     Flogger.i("Starting capture loop");
+    if (hideUpdateLink == false) {
+      hideUpdateLink = !hideUpdateLink;
+    }
     timer = Timer.periodic(Duration(milliseconds: dt), (timer) {
       if (isCapturing) { // Check the flag inside the timer callback
         _captureDamage();
@@ -274,7 +323,7 @@ class MainPage extends StatelessWidget {
   const MainPage({super.key});
 
   @override
-  Widget build(BuildContext context) {   
+  Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
 
     final theme = Theme.of(context);
@@ -300,20 +349,47 @@ class MainPage extends StatelessWidget {
   }
 }
 
+Future<void> _launchUrl() async {
+  final Uri uri = Uri.parse('https://github.com/AndyWilliams682/dps_meter/releases/latest');
+  if (!await launchUrl(uri)) {
+    throw Exception('Could not launch google.com');
+  }
+}
+
+Widget _centralLabels(BuildContext context) {
+  var appState = context.watch<MyAppState>();
+  var updateAvailable = appState.updateAvailable;
+  var windowDps = appState.windowDps;
+  var hideUpdateLink = appState.hideUpdateLink;
+
+  final theme = Theme.of(context);
+  final fontStyle = theme.textTheme.labelLarge;
+  final urlStyle = TextStyle(
+    fontFamily: 'Fontin',
+    color: Colors.lightBlue,
+    decoration: TextDecoration.underline,
+  );
+
+  if (updateAvailable && !hideUpdateLink) {
+    return GestureDetector(onTap: _launchUrl, child: Text("Update Here!", style: urlStyle));
+  } else {
+    return Text("Recent DPS: ${displayDps(windowDps)}", style: fontStyle);
+  }
+}
+
 Widget _collapsedSection(BuildContext context) {
   var appState = context.watch<MyAppState>();
   var overallDps = appState.overallDps;
-  var windowDps = appState.windowDps;
 
   final theme = Theme.of(context);
   final fontStyle = theme.textTheme.labelLarge;
 
   IconData capturingIcon;
-    if (appState.isCapturing) {
-      capturingIcon = Icons.pause;
-    } else {
-      capturingIcon = Icons.play_arrow;
-    }
+  if (appState.isCapturing) {
+    capturingIcon = Icons.pause;
+  } else {
+    capturingIcon = Icons.play_arrow;
+  }
 
   return DragToMoveArea(
     child: Row(
@@ -324,7 +400,7 @@ Widget _collapsedSection(BuildContext context) {
           children: [
             Text("Overall DPS: ${displayDps(overallDps)}", style: fontStyle),
             SizedBox(height: 2),
-            Text("Recent DPS: ${displayDps(windowDps)}", style: fontStyle),
+            _centralLabels(context),
           ],
         ),
         IconButton(icon: Icon(Icons.close), onPressed: () {
