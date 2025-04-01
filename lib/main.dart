@@ -341,7 +341,7 @@ Widget _expandedSection(BuildContext context) {
   final unselectedFontStyle = theme.textTheme.bodySmall;
 
   return DefaultTabController(
-    length: 3,
+    length: 2, // TODO: Set to 3 when adding Settings tab
     child: Column(
       mainAxisSize: MainAxisSize.min,
 
@@ -349,7 +349,7 @@ Widget _expandedSection(BuildContext context) {
         TabBar(
           tabs: [
             Tab(text: "History"),
-            Tab(text: "Settings"),
+            // Tab(text: "Settings"),
             Tab(text: "Debug"),
           ],
           labelStyle: selectedFontStyle,
@@ -360,7 +360,7 @@ Widget _expandedSection(BuildContext context) {
           child: TabBarView(
             children: [
               _historyTab(context),
-              Text("Settings Body"),
+              // Text("Settings Body"),
               _debugTab(context),
             ],
           ),
