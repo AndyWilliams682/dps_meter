@@ -408,7 +408,9 @@ class HistoryRadio extends StatelessWidget {
                 onChanged(newValue!);
               },
             ),
-            Expanded(child:Text(label)), // Add 
+            Expanded(flex: 2, child: Text(label)),
+            Expanded(child: Text("Wahoo", textAlign: TextAlign.center)),
+            Expanded(child: Text("Weehee", textAlign: TextAlign.center)), // Add 
           ],
         ),
       ),
@@ -426,10 +428,8 @@ Widget _historyTab(BuildContext context) {
         padding: const EdgeInsets.all(8.0), // TODO: Change hard-coded value?
         child: Row(
           children: [
-            SizedBox(width: 35), // TODO: Remove hard-coded value
-            Expanded(child: Text('Name', textAlign: TextAlign.center,)),
-            Expanded(child: Text('Time\n(s)', textAlign: TextAlign.center)),
-            Expanded(child: Text('Total\nDamage', textAlign: TextAlign.center)),
+            SizedBox(width: 27), // TODO: Remove hard-coded value
+            Expanded(flex: 2, child: Text('Name', textAlign: TextAlign.left,)),
             Expanded(child: Text('Overall\nDPS', textAlign: TextAlign.center)),
             Expanded(child: Text('Comparison\n(% More/Less)', textAlign: TextAlign.center)),
           ],
@@ -438,22 +438,8 @@ Widget _historyTab(BuildContext context) {
       Expanded(
         child: ListView.builder(
           itemCount: 3,
-          prototypeItem: Row(
-            children: [
-              HistoryRadio(
-                label: 'This is the first label text',
-                padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                value: true,
-                groupValue: true,
-                onChanged: (bool newValue) {},
-              ),
-              Text("This is the first column"), Text("This is the second")
-            ],
-          ),
           itemBuilder: (context, index) {
-            return Row(
-              children: [
-                HistoryRadio(
+            return HistoryRadio(
                   label: 'Item ${index + 1}',
                   padding: const EdgeInsets.symmetric(horizontal: 5.0),
                   value: true,
@@ -461,10 +447,9 @@ Widget _historyTab(BuildContext context) {
                   onChanged: (bool newValue) {
                     appState.setRadioSelected(index, newValue);
                   },
-                ),
-                Text("${history[index].totalTime}, ${history[index].totalDamage}, ${displayDps(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
-              ] // TODO: Color more/less based on positive/negative (and maybe magnitude?) or Bold the highest/lowest?
-            );
+                );
+                // Text("${history[index].totalTime}, ${history[index].totalDamage}, ${displayDps(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
+                // TODO: Color more/less based on positive/negative (and maybe magnitude?) or Bold the highest/lowest?
           },
         ),
       ),
