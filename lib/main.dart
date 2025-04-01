@@ -26,16 +26,21 @@ Future setupLogger() async {
 
 double logBase(num x, num base) => math.log(x) / math.log(base);
 
-String calcMultiplier(double referenceDps, double comparisonDps) {
+String displayComparison(double referenceDps, double comparisonDps) {
   var multiplier = (comparisonDps / referenceDps - 1) * 100;
   var indicatingWord = "More";
+  var indicatingArrow = "⯅";
   if (multiplier < 0) {
     indicatingWord = "Less";
+    indicatingArrow = "⯆";
   }
-  return "${multiplier.abs()}% $indicatingWord";
+  if (multiplier.abs() < 1) {
+    return "<1% $indicatingWord";
+  }
+  return "$indicatingArrow${multiplier.abs().toStringAsFixed(2)}% $indicatingWord";
 }
 
-String dpsDisplay(double dps) {
+String displayDps(double dps) {
   if(dps <= 0) {
     return "0";
   }
@@ -175,14 +180,14 @@ class MyAppState extends ChangeNotifier {
     )
   ];
   
-  List<bool> isRadioSelectedList = [false, false, false]; // Initialize with the first one selected
+  List<bool> isRadioSelectedList = [false, false, false]; // TODO: Update appropriately
 
   void setRadioSelected(int index, bool newValue) {
     // Deselect all others in the list
     for (int i = 0; i < isRadioSelectedList.length; i++) {
       if (i != index) {
         isRadioSelectedList[i] = false;
-        measurementHistory[i].comparisonMultiplier = calcMultiplier(measurementHistory[index].overallDps, measurementHistory[i].overallDps);
+        measurementHistory[i].comparisonMultiplier = displayComparison(measurementHistory[index].overallDps, measurementHistory[i].overallDps);
       } else {
         measurementHistory[i].comparisonMultiplier = "-";
       }
@@ -320,9 +325,9 @@ Widget _collapsedSection(BuildContext context) {
         IconButton(icon: Icon(capturingIcon), onPressed: appState.toggleCapturing),
         Column(
           children: [
-            Text("Overall DPS: ${dpsDisplay(overallDps)}", style: fontStyle),
+            Text("Overall DPS: ${displayDps(overallDps)}", style: fontStyle),
             SizedBox(height: 2),
-            Text("Recent DPS: ${dpsDisplay(windowDps)}", style: fontStyle),
+            Text("Recent DPS: ${displayDps(windowDps)}", style: fontStyle),
           ],
         ),
         IconButton(icon: Icon(Icons.close), onPressed: () {
@@ -457,7 +462,7 @@ Widget _historyTab(BuildContext context) {
                     appState.setRadioSelected(index, newValue);
                   },
                 ),
-                Text("${history[index].totalTime}, ${history[index].totalDamage}, ${dpsDisplay(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
+                Text("${history[index].totalTime}, ${history[index].totalDamage}, ${displayDps(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
               ] // TODO: Color more/less based on positive/negative (and maybe magnitude?) or Bold the highest/lowest?
             );
           },
