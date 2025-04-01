@@ -66,14 +66,19 @@ String displayDps(double dps) {
 }
 
 class MeasurementLabels {
-  String? name;
-  String? totalTime;
-  String? totalDamage;
-  double overallDps; // This stays as a number for future calculations, display using displayDps
-  String comparisonMultiplier = "-";
-  final DateTime dateTime = DateTime.now();
+  MeasurementLabels({
+    required this.name,
+    required this.totalTime,
+    required this.totalDamage,
+    required this.overallDps,
+  });
 
-  MeasurementLabels({this.name, this.totalTime, this.totalDamage, this.overallDps = 0});
+  final String name;
+  final String totalTime;
+  final String totalDamage;
+  final double overallDps;
+  var comparisonMultiplier = "-";
+  final DateTime dateTime = DateTime.now();
 }
 
 Future<void> main() async {
@@ -132,7 +137,7 @@ class MyApp extends StatelessWidget {
             bodyMedium: TextStyle(
               fontFamily: 'Fontin',
               color: Colors.grey
-            )
+            ),
           )
         ),
         home: MainPage(),
@@ -376,14 +381,14 @@ Widget _expandedSection(BuildContext context) {
 class HistoryRadio extends StatelessWidget {
   const HistoryRadio({
     super.key,
-    required this.label,
+    required this.labels,
     required this.padding,
     required this.groupValue,
     required this.value,
     required this.onChanged,
   });
 
-  final String label;
+  final MeasurementLabels labels;
   final EdgeInsets padding;
   final bool groupValue;
   final bool value;
@@ -391,6 +396,20 @@ class HistoryRadio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bodyMore = TextStyle(
+      fontFamily: 'Fontin',
+      color: Colors.lightGreenAccent
+    );
+    final bodyLess = TextStyle(
+      fontFamily: 'Fontin',
+      color: Colors.red
+    );
+    final bodyNeutral = TextStyle(
+      fontFamily: 'Fontin',
+      color: Colors.white
+    );
+    var comparisonText = labels.comparisonMultiplier;
+
     return InkWell(
       onTap: () {
         if (value != groupValue) {
@@ -408,9 +427,16 @@ class HistoryRadio extends StatelessWidget {
                 onChanged(newValue!);
               },
             ),
-            Expanded(flex: 2, child: Text(label)),
-            Expanded(child: Text("Wahoo", textAlign: TextAlign.center)),
-            Expanded(child: Text("Weehee", textAlign: TextAlign.center)), // Add 
+            Expanded(flex: 2, child: Text(labels.name)),
+            Expanded(child: Text(
+              displayDps(labels.overallDps),
+              textAlign: TextAlign.center
+            )),
+            Expanded(child: Text(
+              labels.comparisonMultiplier,
+              textAlign: TextAlign.center,
+              style: comparisonText.contains("More") ? bodyMore : comparisonText.contains("Less") ? bodyLess : bodyNeutral
+            )), 
           ],
         ),
       ),
@@ -440,7 +466,7 @@ Widget _historyTab(BuildContext context) {
           itemCount: 3,
           itemBuilder: (context, index) {
             return HistoryRadio(
-                  label: 'Item ${index + 1}',
+                  labels: history[index],
                   padding: const EdgeInsets.symmetric(horizontal: 5.0),
                   value: true,
                   groupValue: appState.isRadioSelectedList[index],
