@@ -164,28 +164,9 @@ class MyAppState extends ChangeNotifier {
 
   var isExpanded = false;
 
-  var measurementHistory = <MeasurementLabels>[ // TODO: Init this empty and add new things to it
-    MeasurementLabels(
-      name: "Test 1",
-      totalTime: "10s",
-      totalDamage: "5000",
-      overallDps: 5000 / 10,
-    ),
-    MeasurementLabels(
-      name: "Test 2",
-      totalTime: "10s",
-      totalDamage: "10000",
-      overallDps: 10000 / 10,
-    ),
-    MeasurementLabels(
-      name: "Test 3",
-      totalTime: "20s",
-      totalDamage: "5000",
-      overallDps: 5000 / 20,
-    )
-  ];
-  
-  List<bool> isRadioSelectedList = [false, false, false]; // TODO: Update appropriately
+  var totalMeasurements = 0;
+  var measurementHistory = <MeasurementLabels>[];
+  List<bool> isRadioSelectedList = [];
 
   void setRadioSelected(int index, bool newValue) {
     // Deselect all others in the list
@@ -254,6 +235,17 @@ class MyAppState extends ChangeNotifier {
 
   void _stopTimer() {
     Flogger.i("Stopping capture loop");
+    if (overallDps > 0) {
+      Flogger.i("Saving measurement as Trial ${measurementHistory.length + 1} with overall DPS = ${displayDps(overallDps)}");
+      var newMeasurement = MeasurementLabels(
+        name: "Trial ${measurementHistory.length + 1}",
+        totalTime: "${elapsedTime}s",
+        totalDamage: "accumulatedDamage",
+        overallDps: overallDps,
+      );
+      measurementHistory.insert(0, newMeasurement);
+      isRadioSelectedList.insert(0, false);
+    }
     damageHistory = [];
     accumulatedDamage = 0;
     elapsedTime = 0;
@@ -463,19 +455,17 @@ Widget _historyTab(BuildContext context) {
       ),
       Expanded(
         child: ListView.builder(
-          itemCount: 3,
+          itemCount: history.length,
           itemBuilder: (context, index) {
             return HistoryRadio(
-                  labels: history[index],
-                  padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                  value: true,
-                  groupValue: appState.isRadioSelectedList[index],
-                  onChanged: (bool newValue) {
-                    appState.setRadioSelected(index, newValue);
-                  },
-                );
-                // Text("${history[index].totalTime}, ${history[index].totalDamage}, ${displayDps(history[index].overallDps)}, ${history[index].comparisonMultiplier}"),
-                // TODO: Color more/less based on positive/negative (and maybe magnitude?) or Bold the highest/lowest?
+              labels: history[index],
+              padding: const EdgeInsets.symmetric(horizontal: 5.0),
+              value: true,
+              groupValue: appState.isRadioSelectedList[index],
+              onChanged: (bool newValue) {
+                appState.setRadioSelected(index, newValue);
+              },
+            );
           },
         ),
       ),
