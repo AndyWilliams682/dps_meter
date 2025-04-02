@@ -466,7 +466,7 @@ class HistoryRadio extends StatelessWidget {
   Widget build(BuildContext context) {
     final bodyMore = TextStyle(
       fontFamily: 'Fontin',
-      color: Colors.lightGreenAccent
+      color: Colors.blue
     );
     final bodyLess = TextStyle(
       fontFamily: 'Fontin',
