@@ -86,7 +86,7 @@ Future<String?> getLatestReleaseTag() async {
 }
 
 Future<String?> getCurrentAppVersion() async {
-  return "0.1.0"; // TODO: Replace with a more automated check so this doesn't have to be updated every release
+  return "1.0.0"; // TODO: Replace with a more automated check so this doesn't have to be updated every release
 }
 
 Future<bool> isNewVersionAvailable() async {
