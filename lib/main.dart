@@ -243,7 +243,7 @@ class MyAppState extends ChangeNotifier {
 
     if (damageReading == 0) {
       if (damageHistory.isEmpty) {
-        return;
+        return; // TODO: May be a bug with broken readings causing incorrect accumulation, need to return a Result or Error
       } else if (accumulatedDamage < damageHistory[damageHistory.length - 1]) {
         accumulatedDamage = damageHistory[damageHistory.length - 1];
       }
