@@ -2,7 +2,7 @@
 
 [Latest Release](https://github.com/AndyWilliams682/dps_meter/releases/latest)
 
-A tool that can calculate your DPS when fighting bosses in Path of Exile 2.
+A tool that can calculate your DPS when fighting bosses in Path of Exile 2. **NOTE: This violates TOS (reading information from the screen in an automated manner). I realized this after making it, I will not be advertising further until I get the chance to rework the application in a compliant manner.**
 
 ## Showcase
 
