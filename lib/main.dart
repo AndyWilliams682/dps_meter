@@ -69,7 +69,7 @@ String displayDps(double dps) {
 }
 
 Future<String?> getLatestReleaseTag() async {
-  final url = Uri.parse('https://api.github.com/repos/AndyWilliams682/dps_meter/releases/latest');
+  final url = Uri.parse('https://api.github.com/repos/AndyWilliams682/poe2_dps_meter/releases/latest');
   try {
     final response = await http.get(url);
     if (response.statusCode == 200) {
@@ -165,7 +165,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(updateAvailable: updateAvailable),
       child: MaterialApp(
-        title: 'DPS Meter',
+        title: 'POE2 DPS Meter',
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
@@ -350,7 +350,7 @@ class MainPage extends StatelessWidget {
 }
 
 Future<void> _launchUrl() async {
-  final Uri uri = Uri.parse('https://github.com/AndyWilliams682/dps_meter/releases/latest');
+  final Uri uri = Uri.parse('https://github.com/AndyWilliams682/poe2_dps_meter/releases/latest');
   if (!await launchUrl(uri)) {
     throw Exception('Could not launch google.com');
   }
