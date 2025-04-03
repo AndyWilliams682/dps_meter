@@ -14,7 +14,7 @@ import 'package:dps_meter/src/rust/api/screenshot.dart';
 import 'package:dps_meter/src/rust/frb_generated.dart';
 
 
-const collapsedSize = Size(230, 50);
+const collapsedSize = Size(275, 50);
 const expandedSize = Size(600, 500);
 
 Future setupLogger() async {
